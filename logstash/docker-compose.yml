@@ -1,0 +1,36 @@
+version: "3.8"
+
+volumes:
+  logstashdata01:
+    driver: local
+
+networks:
+  elastic:
+    external: true
+
+services:
+  logstash:
+    image: docker.elastic.co/logstash/logstash:${STACK_VERSION}
+    labels:
+      co.elastic.logs/module: logstash
+    user: root
+    volumes:
+      - logstashdata01:/usr/share/logstash/data
+      - ./certs:/usr/share/logstash/certs
+      - ./logstash.conf:/usr/share/logstash/pipeline/logstash.conf:ro
+      - /var/log/nginx:/var/log/nginx
+    environment:
+      - NODE_NAME="logstash"
+      - xpack.monitoring.enabled=false
+      - ELASTIC_USER=elastic
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD}
+      - ELASTIC_HOSTS=https://65.109.101.153:9201
+      - SSL_CERTIFICATE_PATH=/usr/share/logstash/certs/es01/es01.crt
+      - SSL_KEY_PATH=/usr/share/logstash/certs/es01/es01.key
+      - SSL_CA_PATH=/usr/share/logstash/certs/ca/ca.crt
+    command: logstash -f /usr/share/logstash/pipeline/logstash.conf
+    ports:
+      - "5044:5044/udp"
+    mem_limit: ${LS_MEM_LIMIT}
+    networks:
+      - elastic
